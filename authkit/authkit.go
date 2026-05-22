@@ -57,11 +57,12 @@ type (
 	PasswordHasher = core.PasswordHasher
 	TokenManager   = core.TokenManager
 	SMSVerifier    = core.SMSVerifier
-	OAuthProvider  = core.OAuthProvider
 
 	BcryptHasher = core.BcryptHasher
 	JWTManager   = core.JWTManager
 )
+
+type oauthProvider = core.OAuthProvider
 
 var (
 	NewJWTManager = core.NewJWTManager
@@ -129,7 +130,7 @@ func WithSMSVerifier(verifier SMSVerifier) Option {
 	})
 }
 
-func WithOAuthProviders(providers ...OAuthProvider) Option {
+func withOAuthProviders(providers ...oauthProvider) Option {
 	return optionFunc(func(opts *options) {
 		opts.oauthProviders = providers
 	})
@@ -139,7 +140,7 @@ type options struct {
 	passwordHasher PasswordHasher
 	tokenManager   TokenManager
 	smsVerifier    SMSVerifier
-	oauthProviders []OAuthProvider
+	oauthProviders []oauthProvider
 }
 
 type optionFunc func(*options)

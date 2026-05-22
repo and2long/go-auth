@@ -45,6 +45,28 @@ func TestRegisterEmailUsesSnakeCaseUserFields(t *testing.T) {
 	}
 }
 
+func TestOAuthLoginUsesUnifiedRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	RegisterRoutes(router, newGinTestKit(t))
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/auth/login/oauth", bytes.NewBufferString(`{"provider":"google","code":"token"}`))
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("oauth login status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	var resp struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.Code != string(authkit.CodeProviderError) {
+		t.Fatalf("code = %q want %q", resp.Code, authkit.CodeProviderError)
+	}
+}
+
 func newGinTestKit(t *testing.T) *authkit.Kit {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{TranslateError: true})

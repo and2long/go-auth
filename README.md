@@ -106,7 +106,7 @@ Gin 和 `net/http` 集成默认暴露同一组路由：
 | `POST` | `/auth/register/email` | 使用邮箱和密码注册。 |
 | `POST` | `/auth/login/email` | 使用邮箱和密码登录。 |
 | `POST` | `/auth/login/phone` | 使用手机号和验证码登录。需要配置 `WithSMSVerifier`。 |
-| `POST` | `/auth/login/oauth/:provider` | 使用 OAuth Provider 登录。需要配置 `WithOAuthProviders`。 |
+| `POST` | `/auth/login/oauth` | 使用 Google、Apple 或微信登录。需要配置 `WithOAuthProvidersFromEnv()`。 |
 | `POST` | `/auth/refresh` | 轮换 refresh token，并签发新的 access token。 |
 | `POST` | `/auth/logout` | 撤销 refresh token。 |
 | `GET` | `/auth/me` | 根据 bearer access token 返回当前用户。 |
@@ -191,26 +191,115 @@ curl -s http://localhost:8080/auth/logout \
 | `PasswordMinLen` | `8` | 邮箱注册时的最短密码长度。 |
 | `Now` | `time.Now` | 当前时间函数，主要用于测试。 |
 
-短信验证码、OAuth 等可选能力可以通过 option 配置，不需要额外的仓储配置：
+短信验证码、内置 Google/Apple/微信登录等可选能力可以通过 option 配置，不需要额外的仓储配置：
 
 ```go
 kit, err := authkit.NewWithStore(
 	authkit.Config{SigningKey: []byte(os.Getenv("AUTHKIT_SIGNING_KEY"))},
 	store,
 	authkit.WithSMSVerifier(mySMSVerifier),
-	authkit.WithOAuthProviders(googleProvider, githubProvider),
+	authkit.WithOAuthProvidersFromEnv(),
 )
 ```
 
+## Google 登录示例
+
+AuthKit 内置 Google ID Token 验证。前端通过 Google Identity Services 拿到 ID Token 后，把它放在默认 OAuth 登录接口的 `code` 字段里提交给后端。后端会验证 JWT 签名、issuer、audience 和过期时间，并映射 Google 的 `sub/email/name/picture`。
+
+后端启用方式：
+
+```go
+kit, err := authkit.NewWithStore(
+	authkit.Config{SigningKey: []byte(os.Getenv("AUTHKIT_SIGNING_KEY"))},
+	store,
+	authkit.WithOAuthProvidersFromEnv(),
+)
+```
+
+客户端提交 Google ID Token：
+
+```sh
+curl -s http://localhost:8080/auth/login/oauth \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"google","code":"GOOGLE_ID_TOKEN"}'
+```
+
+后端需要配置 Google OAuth Client ID，用于校验 ID Token 的 `aud` 是否属于你的应用：
+
+| 变量 | 是否必需 | 用途 |
+| --- | --- | --- |
+| `GOOGLE_CLIENT_ID` | 是 | Google OAuth Client ID，用于验证 ID Token 的 audience。 |
+
+## Apple 登录示例
+
+AuthKit 也内置 Apple ID Token 验证。前端拿到 Apple 返回的 `identityToken` 后，把它放在默认 OAuth 登录接口的 `code` 字段里提交给后端。后端会从 Apple JWKS 地址获取公钥，并验证 JWT 签名、issuer、audience 和过期时间。
+
+后端启用方式和 Google 相同：
+
+```go
+kit, err := authkit.NewWithStore(
+	authkit.Config{SigningKey: []byte(os.Getenv("AUTHKIT_SIGNING_KEY"))},
+	store,
+	authkit.WithOAuthProvidersFromEnv(),
+)
+```
+
+客户端提交 Apple ID Token：
+
+```sh
+curl -s http://localhost:8080/auth/login/oauth \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"apple","code":"APPLE_ID_TOKEN"}'
+```
+
+后端需要配置 Apple Client ID。对 iOS 原生应用通常是 Bundle ID；对网页或 Android 使用 Sign in with Apple 时通常是 Services ID，必须和 ID Token 的 `aud` 一致。
+
+| 变量 | 是否必需 | 用途 |
+| --- | --- | --- |
+| `APPLE_CLIENT_ID` | 是 | Apple Client ID，用于验证 ID Token 的 audience。 |
+
+## 微信登录示例
+
+AuthKit 内置微信授权码登录。前端或客户端完成微信登录后拿到 `code`，把它提交给统一 OAuth 登录接口。后端会使用微信 AppID 和 AppSecret 换取 `access_token/openid`，并尽量拉取用户昵称和头像。
+
+后端启用方式和 Google/Apple 相同：
+
+```go
+kit, err := authkit.NewWithStore(
+	authkit.Config{SigningKey: []byte(os.Getenv("AUTHKIT_SIGNING_KEY"))},
+	store,
+	authkit.WithOAuthProvidersFromEnv(),
+)
+```
+
+客户端提交微信 code：
+
+```sh
+curl -s http://localhost:8080/auth/login/oauth \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"wechat","code":"WECHAT_CODE"}'
+```
+
+后端需要配置微信应用参数：
+
+| 变量 | 是否必需 | 用途 |
+| --- | --- | --- |
+| `WECHAT_APP_ID` | 是 | 微信开放平台或公众平台应用 AppID。 |
+| `WECHAT_APP_SECRET` | 是 | 微信应用 AppSecret，用于后端换取 access token。 |
+
 ## 环境变量
 
-AuthKit 库本身不会自动读取环境变量。你的应用应该自己读取密钥和运行时配置，然后传给 `authkit.Config` 或数据库初始化代码。
+AuthKit 库本身不会自动读取认证密钥、数据库路径等环境变量。你的应用应该自己读取这些密钥和运行时配置，然后传给 `authkit.Config` 或数据库初始化代码。Google/Apple/微信登录可以通过 `WithOAuthProvidersFromEnv()` 按环境变量自动启用。
 
 典型生产应用至少需要配置：
 
 | 变量 | 是否必需 | 用途 | 说明 |
 | --- | --- | --- | --- |
 | `AUTHKIT_SIGNING_KEY` | 是 | `authkit.Config.SigningKey` | JWT 签名密钥。使用内置 JWT 管理器时至少 32 字节。必须保密，并且服务重启前后要保持稳定。 |
+| `GOOGLE_CLIENT_ID` | 否 | Google 登录 | 配置后，`WithOAuthProvidersFromEnv()` 会启用内置 Google ID Token 验证。 |
+| `APPLE_CLIENT_ID` | 否 | Apple 登录 | 配置后，`WithOAuthProvidersFromEnv()` 会启用内置 Apple ID Token 验证。 |
+| `WECHAT_APP_ID` | 否 | 微信登录 | 和 `WECHAT_APP_SECRET` 同时配置后，`WithOAuthProvidersFromEnv()` 会启用内置微信登录。 |
+| `WECHAT_APP_SECRET` | 否 | 微信登录 | 和 `WECHAT_APP_ID` 同时配置后，后端会用它换取微信 access token。 |
 
 推荐的生产环境写法：
 

@@ -65,6 +65,27 @@ func TestPhoneVerificationFailureUsesVerificationCode(t *testing.T) {
 	}
 }
 
+func TestOAuthLoginUsesUnifiedRoute(t *testing.T) {
+	kit := newHTTPTestKit(t)
+	server := New(kit).Routes()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/auth/login/oauth", bytes.NewBufferString(`{"provider":"google","code":"token"}`))
+	server.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("oauth login status = %d body = %s", rec.Code, rec.Body.String())
+	}
+	var resp struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if resp.Code != string(authkit.CodeProviderError) {
+		t.Fatalf("code = %q want %q", resp.Code, authkit.CodeProviderError)
+	}
+}
+
 func TestDuplicateRegisterUsesEmailExistsCode(t *testing.T) {
 	kit := newHTTPTestKit(t)
 	server := New(kit).Routes()

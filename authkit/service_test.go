@@ -13,7 +13,7 @@ import (
 )
 
 func TestEmailRegisterLoginRefreshAndLogout(t *testing.T) {
-	kit := newTestKit(t, nil, nil)
+	kit := newTestKit(t, nil)
 	ctx := context.Background()
 
 	registered, err := kit.RegisterWithEmail(ctx, "USER@example.com", "password123", authkit.Profile{Name: "User"})
@@ -67,7 +67,7 @@ func TestEmailRegisterLoginRefreshAndLogout(t *testing.T) {
 }
 
 func TestWeakPassword(t *testing.T) {
-	kit := newTestKit(t, nil, nil)
+	kit := newTestKit(t, nil)
 	_, err := kit.RegisterWithEmail(context.Background(), "user@example.com", "short", authkit.Profile{})
 	if !errors.Is(err, authkit.ErrWeakPassword) {
 		t.Fatalf("expected weak password, got %v", err)
@@ -75,7 +75,7 @@ func TestWeakPassword(t *testing.T) {
 }
 
 func TestDuplicateEmailReturnsEmailExists(t *testing.T) {
-	kit := newTestKit(t, nil, nil)
+	kit := newTestKit(t, nil)
 	ctx := context.Background()
 	if _, err := kit.RegisterWithEmail(ctx, "user@example.com", "password123", authkit.Profile{}); err != nil {
 		t.Fatalf("register: %v", err)
@@ -86,7 +86,7 @@ func TestDuplicateEmailReturnsEmailExists(t *testing.T) {
 }
 
 func TestRejectsDisplayNameEmail(t *testing.T) {
-	kit := newTestKit(t, nil, nil)
+	kit := newTestKit(t, nil)
 	_, err := kit.RegisterWithEmail(context.Background(), "User <user@example.com>", "password123", authkit.Profile{})
 	if !errors.Is(err, authkit.ErrInvalidCredentials) {
 		t.Fatalf("expected invalid credentials for display-name email, got %v", err)
@@ -108,7 +108,7 @@ func TestRegisterEmailIdentityConflictReturnsEmailExists(t *testing.T) {
 
 func TestPhoneLoginCreatesAndReusesUser(t *testing.T) {
 	sms := fakeSMSVerifier{}
-	kit := newTestKit(t, sms, nil)
+	kit := newTestKit(t, sms)
 	ctx := context.Background()
 
 	first, err := kit.LoginWithPhone(ctx, "+15555550100", "123456")
@@ -144,39 +144,11 @@ func TestPhoneLoginConflictReusesExistingIdentity(t *testing.T) {
 	}
 }
 
-func TestOAuthLoginCreatesAndReusesUser(t *testing.T) {
-	provider := fakeProvider{name: "google", user: authkit.OAuthUser{ProviderUserID: "google-1", Email: "person@example.com", Name: "Person"}}
-	kit := newTestKit(t, nil, []authkit.OAuthProvider{provider})
-	ctx := context.Background()
-
-	first, err := kit.LoginWithOAuth(ctx, "google", "code")
-	if err != nil {
-		t.Fatalf("oauth login: %v", err)
-	}
-	second, err := kit.LoginWithOAuth(ctx, "google", "code")
-	if err != nil {
-		t.Fatalf("second oauth login: %v", err)
-	}
-	if first.User.ID != second.User.ID {
-		t.Fatalf("expected same user, got %s and %s", first.User.ID, second.User.ID)
-	}
-}
-
 func TestUnknownOAuthProvider(t *testing.T) {
-	kit := newTestKit(t, nil, nil)
+	kit := newTestKit(t, nil)
 	_, err := kit.LoginWithOAuth(context.Background(), "google", "code")
 	if !errors.Is(err, authkit.ErrProviderNotFound) {
 		t.Fatalf("expected provider not found, got %v", err)
-	}
-}
-
-func TestOAuthLoginRejectsBlankProviderUserID(t *testing.T) {
-	provider := fakeProvider{name: "google", user: authkit.OAuthUser{ProviderUserID: "   "}}
-	kit := newTestKit(t, nil, []authkit.OAuthProvider{provider})
-
-	_, err := kit.LoginWithOAuth(context.Background(), "google", "code")
-	if !errors.Is(err, authkit.ErrInvalidCredentials) {
-		t.Fatalf("expected invalid credentials, got %v", err)
 	}
 }
 
@@ -249,7 +221,7 @@ func TestNewWithStoreRejectsNilStore(t *testing.T) {
 	}
 }
 
-func newTestKit(t *testing.T, sms authkit.SMSVerifier, providers []authkit.OAuthProvider) *authkit.Kit {
+func newTestKit(t *testing.T, sms authkit.SMSVerifier) *authkit.Kit {
 	t.Helper()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{TranslateError: true})
 	if err != nil {
@@ -264,7 +236,7 @@ func newTestKit(t *testing.T, sms authkit.SMSVerifier, providers []authkit.OAuth
 		SigningKey:      []byte("0123456789abcdef0123456789abcdef"),
 		AccessTokenTTL:  time.Minute,
 		RefreshTokenTTL: time.Hour,
-	}, store, authkit.WithSMSVerifier(sms), authkit.WithOAuthProviders(providers...))
+	}, store, authkit.WithSMSVerifier(sms))
 	if err != nil {
 		t.Fatalf("new kit: %v", err)
 	}
@@ -295,20 +267,6 @@ func (fakeSMSVerifier) Verify(_ context.Context, _, code string) error {
 		return authkit.ErrVerificationFailed
 	}
 	return nil
-}
-
-type fakeProvider struct {
-	name string
-	user authkit.OAuthUser
-	err  error
-}
-
-func (p fakeProvider) Name() string {
-	return p.name
-}
-
-func (p fakeProvider) Exchange(context.Context, string) (authkit.OAuthUser, error) {
-	return p.user, p.err
 }
 
 type fakeTokenManager struct{}

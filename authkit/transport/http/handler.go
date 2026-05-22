@@ -23,7 +23,7 @@ func (h *Handler) Routes() http.Handler {
 	mux.HandleFunc("POST /auth/register/email", h.RegisterEmail)
 	mux.HandleFunc("POST /auth/login/email", h.LoginEmail)
 	mux.HandleFunc("POST /auth/login/phone", h.LoginPhone)
-	mux.HandleFunc("POST /auth/login/oauth/{provider}", h.LoginOAuth)
+	mux.HandleFunc("POST /auth/login/oauth", h.LoginOAuth)
 	mux.HandleFunc("POST /auth/refresh", h.Refresh)
 	mux.HandleFunc("POST /auth/logout", h.Logout)
 	mux.HandleFunc("GET /auth/me", h.Me)
@@ -70,12 +70,13 @@ func (h *Handler) LoginPhone(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) LoginOAuth(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Code string `json:"code"`
+		Provider string `json:"provider"`
+		Code     string `json:"code"`
 	}
 	if !decode(w, r, &req) {
 		return
 	}
-	result, err := h.Kit.LoginWithOAuth(r.Context(), r.PathValue("provider"), req.Code)
+	result, err := h.Kit.LoginWithOAuth(r.Context(), req.Provider, req.Code)
 	writeAuthResult(w, result, err)
 }
 

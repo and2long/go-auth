@@ -56,12 +56,13 @@ func loginPhone(kit *authkit.Kit) gin.HandlerFunc {
 func loginOAuth(kit *authkit.Kit) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
-			Code string `json:"code"`
+			Provider string `json:"provider"`
+			Code     string `json:"code"`
 		}
 		if !bind(c, &req) {
 			return
 		}
-		result, err := kit.LoginWithOAuth(c.Request.Context(), c.Param("provider"), req.Code)
+		result, err := kit.LoginWithOAuth(c.Request.Context(), req.Provider, req.Code)
 		writeAuthResult(c, result, err)
 	}
 }
