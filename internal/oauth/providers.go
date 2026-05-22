@@ -1,4 +1,4 @@
-package authkit
+package oauth
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/and2long/go-auth/internal/core"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -28,8 +29,8 @@ const (
 	EnvWeChatSecret   = "WECHAT_APP_SECRET"
 )
 
-func oauthProvidersFromEnv() []oauthProvider {
-	var providers []oauthProvider
+func ProvidersFromEnv() []core.OAuthProvider {
+	var providers []core.OAuthProvider
 	if clientID := os.Getenv(EnvGoogleClientID); clientID != "" {
 		providers = append(providers, newGoogleIDTokenProvider(clientID))
 	}
@@ -40,10 +41,6 @@ func oauthProvidersFromEnv() []oauthProvider {
 		providers = append(providers, newWeChatCodeProvider(appID, secret))
 	}
 	return providers
-}
-
-func WithOAuthProvidersFromEnv() Option {
-	return withOAuthProviders(oauthProvidersFromEnv()...)
 }
 
 type googleIDTokenProvider struct {
@@ -66,9 +63,9 @@ func (p *googleIDTokenProvider) Name() string {
 	return ProviderGoogle
 }
 
-func (p *googleIDTokenProvider) Exchange(ctx context.Context, idToken string) (OAuthUser, error) {
+func (p *googleIDTokenProvider) Exchange(ctx context.Context, idToken string) (core.OAuthUser, error) {
 	if p.ClientID == "" {
-		return OAuthUser{}, errors.New("authkit: google client id is required")
+		return core.OAuthUser{}, errors.New("authkit: google client id is required")
 	}
 	claims := &googleClaims{}
 	token, err := jwt.ParseWithClaims(
@@ -79,15 +76,15 @@ func (p *googleIDTokenProvider) Exchange(ctx context.Context, idToken string) (O
 		jwt.WithExpirationRequired(),
 	)
 	if err != nil {
-		return OAuthUser{}, err
+		return core.OAuthUser{}, err
 	}
 	if !token.Valid {
-		return OAuthUser{}, errors.New("authkit: invalid google id token")
+		return core.OAuthUser{}, errors.New("authkit: invalid google id token")
 	}
 	if claims.Issuer != "https://accounts.google.com" && claims.Issuer != "accounts.google.com" {
-		return OAuthUser{}, errors.New("authkit: invalid google id token issuer")
+		return core.OAuthUser{}, errors.New("authkit: invalid google id token issuer")
 	}
-	return OAuthUser{
+	return core.OAuthUser{
 		ProviderUserID: claims.Subject,
 		Email:          claims.Email,
 		Name:           claims.Name,
@@ -161,9 +158,9 @@ func (p *appleIDTokenProvider) Name() string {
 	return ProviderApple
 }
 
-func (p *appleIDTokenProvider) Exchange(ctx context.Context, idToken string) (OAuthUser, error) {
+func (p *appleIDTokenProvider) Exchange(ctx context.Context, idToken string) (core.OAuthUser, error) {
 	if p.ClientID == "" {
-		return OAuthUser{}, errors.New("authkit: apple client id is required")
+		return core.OAuthUser{}, errors.New("authkit: apple client id is required")
 	}
 	claims := &appleClaims{}
 	token, err := jwt.ParseWithClaims(
@@ -175,12 +172,12 @@ func (p *appleIDTokenProvider) Exchange(ctx context.Context, idToken string) (OA
 		jwt.WithExpirationRequired(),
 	)
 	if err != nil {
-		return OAuthUser{}, err
+		return core.OAuthUser{}, err
 	}
 	if !token.Valid {
-		return OAuthUser{}, errors.New("authkit: invalid apple id token")
+		return core.OAuthUser{}, errors.New("authkit: invalid apple id token")
 	}
-	return OAuthUser{
+	return core.OAuthUser{
 		ProviderUserID: claims.Subject,
 		Email:          claims.Email,
 		Name:           claims.Name,
@@ -215,16 +212,16 @@ func (p *weChatCodeProvider) Name() string {
 	return ProviderWeChat
 }
 
-func (p *weChatCodeProvider) Exchange(ctx context.Context, code string) (OAuthUser, error) {
+func (p *weChatCodeProvider) Exchange(ctx context.Context, code string) (core.OAuthUser, error) {
 	if p.AppID == "" || p.Secret == "" {
-		return OAuthUser{}, errors.New("authkit: wechat app id and secret are required")
+		return core.OAuthUser{}, errors.New("authkit: wechat app id and secret are required")
 	}
 	token, err := p.exchangeToken(ctx, code)
 	if err != nil {
-		return OAuthUser{}, err
+		return core.OAuthUser{}, err
 	}
 
-	user := OAuthUser{
+	user := core.OAuthUser{
 		ProviderUserID: firstNonEmpty(token.UnionID, token.OpenID),
 	}
 	profile, err := p.fetchUserInfo(ctx, token.AccessToken, token.OpenID)

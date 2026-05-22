@@ -1,4 +1,4 @@
-package authkit
+package oauth
 
 import (
 	"context"
@@ -67,7 +67,7 @@ func TestOAuthProvidersFromEnv(t *testing.T) {
 	t.Setenv(EnvWeChatAppID, "wechat-app-id")
 	t.Setenv(EnvWeChatSecret, "wechat-secret")
 
-	providers := oauthProvidersFromEnv()
+	providers := ProvidersFromEnv()
 	if len(providers) != 3 {
 		t.Fatalf("expected 3 providers, got %d", len(providers))
 	}
