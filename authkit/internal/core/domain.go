@@ -41,13 +41,13 @@ const (
 )
 
 type User struct {
-	ID        string
-	Email     *string
-	Phone     *string
-	Name      *string
-	AvatarURL *string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        string    `json:"id"`
+	Email     *string   `json:"email"`
+	Phone     *string   `json:"phone"`
+	Name      *string   `json:"name"`
+	AvatarURL *string   `json:"avatar_url"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Identity struct {
