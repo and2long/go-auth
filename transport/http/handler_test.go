@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/and2long/go-auth/authkit"
-	gormrepo "github.com/and2long/go-auth/authkit/repository/gorm"
+	"github.com/and2long/go-auth"
+	gormrepo "github.com/and2long/go-auth/repository/gorm"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

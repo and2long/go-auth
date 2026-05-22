@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/and2long/go-auth/authkit/internal/core"
+	"github.com/and2long/go-auth/internal/core"
 )
 
 const (

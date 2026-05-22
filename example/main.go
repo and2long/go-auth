@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/and2long/go-auth/authkit"
-	gormrepo "github.com/and2long/go-auth/authkit/repository/gorm"
-	ginauth "github.com/and2long/go-auth/authkit/transport/gin"
+	"github.com/and2long/go-auth"
+	gormrepo "github.com/and2long/go-auth/repository/gorm"
+	ginauth "github.com/and2long/go-auth/transport/gin"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

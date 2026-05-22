@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/and2long/go-auth/authkit"
-	gormrepo "github.com/and2long/go-auth/authkit/repository/gorm"
+	"github.com/and2long/go-auth"
+	gormrepo "github.com/and2long/go-auth/repository/gorm"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/and2long/go-auth/authkit"
+	"github.com/and2long/go-auth"
 )
 
 type Handler struct {

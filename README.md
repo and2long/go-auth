@@ -24,10 +24,10 @@ go get github.com/and2long/go-auth
 
 ```go
 import (
-	"github.com/and2long/go-auth/authkit"
-	gormrepo "github.com/and2long/go-auth/authkit/repository/gorm"
-	ginauth "github.com/and2long/go-auth/authkit/transport/gin"
-	httpauth "github.com/and2long/go-auth/authkit/transport/http"
+	"github.com/and2long/go-auth"
+	gormrepo "github.com/and2long/go-auth/repository/gorm"
+	ginauth "github.com/and2long/go-auth/transport/gin"
+	httpauth "github.com/and2long/go-auth/transport/http"
 )
 ```
 

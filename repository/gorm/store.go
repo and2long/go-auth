@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/and2long/go-auth/authkit"
+	"github.com/and2long/go-auth"
 	"gorm.io/gorm"
 )
 

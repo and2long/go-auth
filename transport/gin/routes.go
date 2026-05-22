@@ -1,7 +1,7 @@
 package ginauth
 
 import (
-	"github.com/and2long/go-auth/authkit"
+	"github.com/and2long/go-auth"
 	"github.com/gin-gonic/gin"
 )
 
