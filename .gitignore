@@ -1,0 +1,38 @@
+# Binaries and build output
+bin/
+dist/
+build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go test and coverage output
+coverage.out
+coverage.html
+*.coverprofile
+
+# Local example/runtime data
+authkit-example.db
+*.db-shm
+*.db-wal
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+temp/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
